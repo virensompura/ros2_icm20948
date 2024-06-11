@@ -28,10 +28,6 @@ class ICM20948Node(Node):
 
         # IMU instance
         self.imu = qwiic_icm20948.QwiicIcm20948(address=self.i2c_addr)
-        if not self.imu.connected:
-            self.logger.info(
-                "The Qwiic ICM20948 device isn't connected to the system. Please check your connection."
-            )
         self.imu.begin()
         self.imu.setFullScaleRangeGyro(qwiic_icm20948.dps2000)
         self.imu.setFullScaleRangeAccel(qwiic_icm20948.gpm16)
