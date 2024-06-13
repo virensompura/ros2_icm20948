@@ -18,16 +18,16 @@ class ICM20948Node(Node):
         i2c_addr = self.get_parameter("i2c_address").get_parameter_value().integer_value
         self.i2c_addr = i2c_addr
 
-        self.declare_parameter("frame_id", "imu_icm20948")
+        self.declare_parameter("frame_id", "imu")
         frame_id = self.get_parameter("frame_id").get_parameter_value().string_value
         self.frame_id = frame_id
 
-        self.declare_parameter("pub_rate", 50)
+        self.declare_parameter("pub_rate", 120)
         pub_rate = self.get_parameter("pub_rate").get_parameter_value().integer_value
         self.pub_rate = pub_rate
 
         # IMU instance
-        self.imu = qwiic_icm20948.QwiicIcm20948(address=self.i2c_addr)
+        self.imu = qwiic_icm20948.QwiicIcm20948(address=0x69)
         self.imu.begin()
         self.imu.setFullScaleRangeGyro(qwiic_icm20948.dps2000)
         self.imu.setFullScaleRangeAccel(qwiic_icm20948.gpm16)
@@ -37,11 +37,14 @@ class ICM20948Node(Node):
         self.mag_pub_ = self.create_publisher(
             sensor_msgs.msg.MagneticField, "/imu/mag_raw", 10
         )
+        self.temp_pub_ = self.create_publisher(sensor_msgs.msg.Temperature, "/imu/temp", 10)
+        
         self.pub_clk_ = self.create_timer(1 / self.pub_rate, self.publish_cback)
 
     def publish_cback(self):
         imu_msg = sensor_msgs.msg.Imu()
         mag_msg = sensor_msgs.msg.MagneticField()
+        temp_msg = sensor_msgs.msg.Temperature()
         if self.imu.dataReady():
             try:
                 self.imu.getAgmt()
@@ -64,8 +67,13 @@ class ICM20948Node(Node):
             mag_msg.magnetic_field.y = self.imu.myRaw * 1e-6 / 0.15
             mag_msg.magnetic_field.z = self.imu.mzRaw * 1e-6 / 0.15
 
+            temp_msg.header.stamp = img.msg.heaer.stamp
+            temp_msg.header.frame_id = self.frame_id
+            temp_msg.temerature = self.imu.tmpRaw / 100.0
+
         self.imu_pub_.publish(imu_msg)
         self.mag_pub_.publish(mag_msg)
+        self.temp_pub_.publish(temp_msg)
 
 
 def main(args=None):
